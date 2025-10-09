@@ -1,5 +1,5 @@
-import os
-from loader import prepare_dataset
+import os  #for the fiel management
+from loader import prepare_dataset #premade file handler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
