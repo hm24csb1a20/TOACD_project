@@ -26,7 +26,7 @@ rf = RandomForestClassifier(
     n_estimators=200,   # number of trees
     max_depth=None,     # let trees grow fully
     random_state=42,
-    class_weight='balanced'  # optional if dataset is imbalanced
+    class_weight='balanced'  
 )
 
 # train
