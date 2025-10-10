@@ -69,13 +69,8 @@ We then classify as:
 
 To measure how good our predictions are, we use the **log loss** or **binary cross-entropy**:
 
-\[
-J(\theta) = -\frac{1}{m} \sum_{i=1}^{m} \big[y^{(i)} \log(h_\theta(x^{(i)})) + (1 - y^{(i)}) \log(1 - h_\theta(x^{(i)}))\big]
-\]
+![Loss Function](https://latex.codecogs.com/png.latex?J(\theta)=-\frac{1}{m}\sum_{i=1}^{m}[y^{(i)}\log(h_\theta(x^{(i)}))+(1-y^{(i)})\log(1-h_\theta(x^{(i)}))])
 
-- \( m \) = number of training samples  
-- \( y^{(i)} \in \{0, 1\} \) = true label (0 = benign, 1 = malicious)  
-- \( h_\theta(x^{(i)}) \) = predicted probability  
 
 This function penalizes confident wrong predictions heavily — encouraging the model to produce accurate probabilities.
 
