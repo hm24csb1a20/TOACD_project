@@ -43,46 +43,49 @@ X, y, vectorizer = prepare_dataset(benign_path, malicious_path)
 We first implemented Logistic Regression manually using Newton’s Method (instead of using sklearn).
 This helped us really understand the math behind the optimization.
 
-### How it works
+###  How Logistic Regression Works
 
-The core idea behind logistic regression is to estimate the probability that a given input \( x \) belongs to a certain class — in our case, whether a piece of code is **malicious** or **benign**.
+The main idea behind logistic regression is to estimate the probability that a given input `x` belongs to a certain class — in our case, whether a piece of code is **malicious** or **benign**.
 
-We use the **sigmoid (logistic) function** to squash any real-valued input into a range between 0 and 1:
+We use the **sigmoid (logistic) function** to convert any real value into a range between 0 and 1:
 
-\[
-h_\theta(x) = \frac{1}{1 + e^{-\theta^T x}}
-\]
+h_theta(x) = 1 / (1 + exp(-theta^T * x))
 
 Here:
-- \( x \) = feature vector representing the code (after TF-IDF transformation)
-- \( \theta \) = model parameters (weights)
-- \( h_\theta(x) \) = probability that the code is malicious  
+- `x` = feature vector representing the code (after TF-IDF transformation)
+- `theta` = model parameters (weights)
+- `h_theta(x)` = probability that the code is malicious  
 
 We then classify as:
-\[
-\text{malicious if } h_\theta(x) \ge 0.5, \text{ else benign.}
-\]
+- malicious if h_theta(x) >= 0.5  
+- benign otherwise  
 
 ---
 
 ###  Loss Function (Cost Function)
 
-To measure how good our predictions are, we use the **log loss** or **binary cross-entropy**:
+To measure how well our model is predicting, we use the **log loss** or **binary cross-entropy** function:
 
-![Loss Function](https://latex.codecogs.com/png.latex?J(\theta)=-\frac{1}{m}\sum_{i=1}^{m}[y^{(i)}\log(h_\theta(x^{(i)}))+(1-y^{(i)})\log(1-h_\theta(x^{(i)}))])
+J(theta) = -(1/m) * Σ [ y(i) * log(h_theta(x(i))) + (1 - y(i)) * log(1 - h_theta(x(i))) ]
 
+Where:
+- `m` = number of training samples  
+- `y(i)` ∈ {0, 1} = true label (0 = benign, 1 = malicious)  
+- `h_theta(x(i))` = predicted probability for sample `i`
 
-This function penalizes confident wrong predictions heavily — encouraging the model to produce accurate probabilities.
+This loss penalizes confident wrong predictions heavily — encouraging the model to output accurate probabilities.
 
 ---
 
 ###  Parameter Update (Newton’s Method)
 
-To minimize \( J(\theta) \), we update the parameters iteratively using **Newton’s Method**, which uses both the gradient (first derivative) and the Hessian (second derivative).
+To minimize J(theta), we iteratively update the model parameters using **Newton’s Method**, which uses both the gradient (first derivative) and the Hessian (second derivative) of the cost function.
 
-\[
-\theta_{new} = \theta - H^{-1} \nabla J(\theta)
-\]
+theta_new = theta - inverse(H) * gradient
+
+Where:
+- gradient = (1/m) * X^T * (h_theta(x) - y)
+- H (Hessian) = (1/m) * X^T * diag(h_theta(x) * (1 - h_theta(x))) * X
 
 ```python
 # basic steps:
