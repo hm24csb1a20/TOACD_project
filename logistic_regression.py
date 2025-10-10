@@ -12,7 +12,7 @@ malicious_path = os.path.join(base_path, "malicious")
 import numpy as np
 
 class LogisticRegression:
-    """logistic regression using newton """
+    """logistic regression using newton method"""
 
     def __init__(self, eps=1e-6, max_iter=100, reg_lambda=1e-4):
         # attributes

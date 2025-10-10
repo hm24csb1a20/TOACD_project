@@ -43,6 +43,52 @@ X, y, vectorizer = prepare_dataset(benign_path, malicious_path)
 We first implemented Logistic Regression manually using Newton’s Method (instead of using sklearn).
 This helped us really understand the math behind the optimization.
 
+### How it works
+
+The core idea behind logistic regression is to estimate the probability that a given input \( x \) belongs to a certain class — in our case, whether a piece of code is **malicious** or **benign**.
+
+We use the **sigmoid (logistic) function** to squash any real-valued input into a range between 0 and 1:
+
+\[
+h_\theta(x) = \frac{1}{1 + e^{-\theta^T x}}
+\]
+
+Here:
+- \( x \) = feature vector representing the code (after TF-IDF transformation)
+- \( \theta \) = model parameters (weights)
+- \( h_\theta(x) \) = probability that the code is malicious  
+
+We then classify as:
+\[
+\text{malicious if } h_\theta(x) \ge 0.5, \text{ else benign.}
+\]
+
+---
+
+###  Loss Function (Cost Function)
+
+To measure how good our predictions are, we use the **log loss** or **binary cross-entropy**:
+
+\[
+J(\theta) = -\frac{1}{m} \sum_{i=1}^{m} \big[y^{(i)} \log(h_\theta(x^{(i)})) + (1 - y^{(i)}) \log(1 - h_\theta(x^{(i)}))\big]
+\]
+
+- \( m \) = number of training samples  
+- \( y^{(i)} \in \{0, 1\} \) = true label (0 = benign, 1 = malicious)  
+- \( h_\theta(x^{(i)}) \) = predicted probability  
+
+This function penalizes confident wrong predictions heavily — encouraging the model to produce accurate probabilities.
+
+---
+
+###  Parameter Update (Newton’s Method)
+
+To minimize \( J(\theta) \), we update the parameters iteratively using **Newton’s Method**, which uses both the gradient (first derivative) and the Hessian (second derivative).
+
+\[
+\theta_{new} = \theta - H^{-1} \nabla J(\theta)
+\]
+
 ```python
 # basic steps:
 grad = (1 / m) * (X.T @ (h - y))
