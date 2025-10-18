@@ -7,9 +7,9 @@
 This project aims to detect whether a given piece of code is **malicious or benign** using machine learning.  
 We started simple — with a **logistic regression model** — and are now moving toward more powerful **tree-based classifiers** like Random Forest.
 
-
-## Prerequistes 
-`conda create --name lime python=3.12 `
+---
+## Prerequistes
+<pre> ```bash conda create --name lime python=3.12 conda activate lime ``` </pre>
 `conda activate lime`
 ---
 
