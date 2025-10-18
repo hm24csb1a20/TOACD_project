@@ -10,7 +10,7 @@ We started simple — with a **logistic regression model** — and are now movin
 ---
 ## Prerequistes
 <pre> ```bash conda create --name lime python=3.12 conda activate lime ``` </pre>
-`conda activate lime`
+<pre> `conda activate lime`</pre>
 ---
 
 ##  Data Collection — the first big hurdle
