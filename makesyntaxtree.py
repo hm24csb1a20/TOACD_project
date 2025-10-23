@@ -4,6 +4,7 @@ import subprocess
 cindex.Config.set_library_file(r"C:\Program Files\LLVM\bin\libclang.dll")
 
 # get all the libraries to be have to be imported from the cpp file 
+# just a safety function in case some obscure library is imported
 def get_clang_includes():
     try:
         output = subprocess.check_output(
