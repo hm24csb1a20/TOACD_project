@@ -16,7 +16,7 @@ def logistic_regressoin_classificaton(random_seed =42):
     model.fit(X=X_train,y=y_train)
     y_pred = model.predict(X_test)
     acc= accuracy_score(y_pred=y_pred,y_true=y_test)
-    print(acc)
+    print(f"The final Accuracy of the model is {acc}")
 
 logistic_regressoin_classificaton(random_seed=42)
 
