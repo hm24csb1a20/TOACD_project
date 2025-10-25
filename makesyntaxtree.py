@@ -33,6 +33,9 @@ cindex.Config.set_library_file(r"C:\Program Files\LLVM\bin\libclang.dll")
 
 
 def parse_c_file(file_path):
+    """
+    given the full path location of c file 
+    will return parse tree of that c file """
     index = cindex.Index.create()
     try:
         tu = index.parse(file_path, args=["-x", "c", "-std=c11"])
