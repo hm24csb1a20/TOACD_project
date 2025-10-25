@@ -32,7 +32,7 @@ class LogisticRegression:
         # if no theta yet just fill zeros
         self.theta = np.zeros(n) if self.theta is None else self.theta
 
-        for _ in range(self.max_iter):
+        for i in range(self.max_iter):
             h = self.sigmoid(X @ self.theta)
             # gradient or slope direction
             grad = (1 / m) * (X.T @ (h - y))
@@ -57,6 +57,8 @@ class LogisticRegression:
 
             # else keep looping
             self.theta = new_theta
+            if(i%10):
+                print(f"{i} iteration done of logsitic regressoin")
 
     def predict_prob(self, X):
         # give probability score
