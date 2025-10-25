@@ -57,7 +57,7 @@ class LogisticRegression:
 
             # else keep looping
             self.theta = new_theta
-            if(i%10):
+            if(i%10==0):
                 print(f"{i} iteration done of logsitic regressoin")
 
     def predict_prob(self, X):
