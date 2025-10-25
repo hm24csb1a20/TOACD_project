@@ -1,281 +1,156 @@
-/* realpath - print the resolved path
-   Copyright (C) 2011-2025 Free Software Foundation, Inc.
+#include <stdlib.h>
+#include <limits.h>
+#include <errno.h>
+#include <unistd.h>
+#include <string.h>
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
-
-/* Written by Pádraig Brady.  */
-
-#include <config.h>
-#include <getopt.h>
-#include <stdio.h>
-#include <sys/types.h>
-
-#include "system.h"
-#include "canonicalize.h"
-#include "relpath.h"
-
-/* The official name of this program (e.g., no 'g' prefix).  */
-#define PROGRAM_NAME "realpath"
-
-#define AUTHORS proper_name_lite ("Padraig Brady", "P\303\241draig Brady")
-
-enum
+static size_t slash_len(const char *s)
 {
-  RELATIVE_TO_OPTION = CHAR_MAX + 1,
-  RELATIVE_BASE_OPTION
-};
-
-static bool verbose = true;
-static bool logical;
-static bool use_nuls;
-static char const *can_relative_to;
-static char const *can_relative_base;
-
-static struct option const longopts[] =
-{
-  {"canonicalize", no_argument, nullptr, 'E'},
-  {"canonicalize-existing", no_argument, nullptr, 'e'},
-  {"canonicalize-missing", no_argument, nullptr, 'm'},
-  {"relative-to", required_argument, nullptr, RELATIVE_TO_OPTION},
-  {"relative-base", required_argument, nullptr, RELATIVE_BASE_OPTION},
-  {"quiet", no_argument, nullptr, 'q'},
-  {"strip", no_argument, nullptr, 's'},
-  {"no-symlinks", no_argument, nullptr, 's'},
-  {"zero", no_argument, nullptr, 'z'},
-  {"logical", no_argument, nullptr, 'L'},
-  {"physical", no_argument, nullptr, 'P'},
-  {GETOPT_HELP_OPTION_DECL},
-  {GETOPT_VERSION_OPTION_DECL},
-  {nullptr, 0, nullptr, 0}
-};
-
-void
-usage (int status)
-{
-  if (status != EXIT_SUCCESS)
-    emit_try_help ();
-  else
-    {
-      printf (_("Usage: %s [OPTION]... FILE...\n"), program_name);
-      fputs (_("\
-Print the resolved absolute file name.\n\
-"), stdout);
-      fputs (_("\
-  -E, --canonicalize           all but the last component must exist (default)\
-\n\
-  -e, --canonicalize-existing  all components of the path must exist\n\
-  -m, --canonicalize-missing   no path components need exist or be a directory\
-\n\
-  -L, --logical                resolve '..' components before symlinks\n\
-  -P, --physical               resolve symlinks as encountered (default)\n\
-  -q, --quiet                  suppress most error messages\n\
-      --relative-to=DIR        print the resolved path relative to DIR\n\
-      --relative-base=DIR      print absolute paths unless paths below DIR\n\
-  -s, --strip, --no-symlinks   don't expand symlinks\n\
-  -z, --zero                   end each output line with NUL, not newline\n\
-"), stdout);
-      fputs (HELP_OPTION_DESCRIPTION, stdout);
-      fputs (VERSION_OPTION_DESCRIPTION, stdout);
-      emit_ancillary_info (PROGRAM_NAME);
-    }
-  exit (status);
+	const char *s0 = s;
+	while (*s == '/') s++;
+	return s-s0;
 }
 
-/* A wrapper around canonicalize_filename_mode(),
-   to call it twice when in LOGICAL mode.  */
-static char *
-realpath_canon (char const *fname, int can_mode)
+char *realpath(const char *restrict filename, char *restrict resolved)
 {
-  char *can_fname = canonicalize_filename_mode (fname, can_mode);
-  if (logical && can_fname)  /* canonicalize again to resolve symlinks.  */
-    {
-      can_mode &= ~CAN_NOLINKS;
-      char *can_fname2 = canonicalize_filename_mode (can_fname, can_mode);
-      free (can_fname);
-      return can_fname2;
-    }
-  return can_fname;
-}
+	char stack[PATH_MAX+1];
+	char output[PATH_MAX];
+	size_t p, q, l, l0, cnt=0, nup=0;
+	int check_dir=0;
 
-/* Test whether canonical prefix is parent or match of path.  */
-ATTRIBUTE_PURE
-static bool
-path_prefix (char const *prefix, char const *path)
-{
-  /* We already know prefix[0] and path[0] are '/'.  */
-  prefix++;
-  path++;
+	if (!filename) {
+		errno = EINVAL;
+		return 0;
+	}
+	l = strnlen(filename, sizeof stack);
+	if (!l) {
+		errno = ENOENT;
+		return 0;
+	}
+	if (l >= PATH_MAX) goto toolong;
+	p = sizeof stack - l - 1;
+	q = 0;
+	memcpy(stack+p, filename, l+1);
 
-  /* '/' is the prefix of everything except '//' (since we know '//'
-     is only present after canonicalization if it is distinct).  */
-  if (!*prefix)
-    return *path != '/';
+	/* Main loop. Each iteration pops the next part from stack of
+	 * remaining path components and consumes any slashes that follow.
+	 * If not a link, it's moved to output; if a link, contents are
+	 * pushed to the stack. */
+restart:
+	for (; ; p+=slash_len(stack+p)) {
+		/* If stack starts with /, the whole component is / or //
+		 * and the output state must be reset. */
+		if (stack[p] == '/') {
+			check_dir=0;
+			nup=0;
+			q=0;
+			output[q++] = '/';
+			p++;
+			/* Initial // is special. */
+			if (stack[p] == '/' && stack[p+1] != '/')
+				output[q++] = '/';
+			continue;
+		}
 
-  /* Likewise, '//' is a prefix of any double-slash path.  */
-  if (*prefix == '/' && !prefix[1])
-    return *path == '/';
+		char *z = __strchrnul(stack+p, '/');
+		l0 = l = z-(stack+p);
 
-  /* Any other prefix has a non-slash portion.  */
-  while (*prefix && *path)
-    {
-      if (*prefix != *path)
-        break;
-      prefix++;
-      path++;
-    }
-  return (!*prefix && (*path == '/' || !*path));
-}
+		if (!l && !check_dir) break;
 
-static bool
-isdir (char const *path)
-{
-  struct stat sb;
-  if (stat (path, &sb) != 0)
-    error (EXIT_FAILURE, errno, _("cannot stat %s"), quoteaf (path));
-  return S_ISDIR (sb.st_mode);
-}
+		/* Skip any . component but preserve check_dir status. */
+		if (l==1 && stack[p]=='.') {
+			p += l;
+			continue;
+		}
 
-static bool
-process_path (char const *fname, int can_mode)
-{
-  char *can_fname = realpath_canon (fname, can_mode);
-  if (!can_fname)
-    {
-      if (verbose)
-        error (0, errno, "%s", quotef (fname));
-      return false;
-    }
+		/* Copy next component onto output at least temporarily, to
+		 * call readlink, but wait to advance output position until
+		 * determining it's not a link. */
+		if (q && output[q-1] != '/') {
+			if (!p) goto toolong;
+			stack[--p] = '/';
+			l++;
+		}
+		if (q+l >= PATH_MAX) goto toolong;
+		memcpy(output+q, stack+p, l);
+		output[q+l] = 0;
+		p += l;
 
-  if (!can_relative_to
-      || (can_relative_base && !path_prefix (can_relative_base, can_fname))
-      || (can_relative_to && !relpath (can_fname, can_relative_to, nullptr, 0)))
-    fputs (can_fname, stdout);
+		int up = 0;
+		if (l0==2 && stack[p-2]=='.' && stack[p-1]=='.') {
+			up = 1;
+			/* Any non-.. path components we could cancel start
+			 * after nup repetitions of the 3-byte string "../";
+			 * if there are none, accumulate .. components to
+			 * later apply to cwd, if needed. */
+			if (q <= 3*nup) {
+				nup++;
+				q += l;
+				continue;
+			}
+			/* When previous components are already known to be
+			 * directories, processing .. can skip readlink. */
+			if (!check_dir) goto skip_readlink;
+		}
+		ssize_t k = readlink(output, stack, p);
+		if (k==p) goto toolong;
+		if (!k) {
+			errno = ENOENT;
+			return 0;
+		}
+		if (k<0) {
+			if (errno != EINVAL) return 0;
+skip_readlink:
+			check_dir = 0;
+			if (up) {
+				while(q && output[q-1]!='/') q--;
+				if (q>1 && (q>2 || output[0]!='/')) q--;
+				continue;
+			}
+			if (l0) q += l;
+			check_dir = stack[p];
+			continue;
+		}
+		if (++cnt == SYMLOOP_MAX) {
+			errno = ELOOP;
+			return 0;
+		}
 
-  putchar (use_nuls ? '\0' : '\n');
+		/* If link contents end in /, strip any slashes already on
+		 * stack to avoid /->// or //->/// or spurious toolong. */
+		if (stack[k-1]=='/') while (stack[p]=='/') p++;
+		p -= k;
+		memmove(stack+p, stack, k);
 
-  free (can_fname);
+		/* Skip the stack advancement in case we have a new
+		 * absolute base path. */
+		goto restart;
+	}
 
-  return true;
-}
+ 	output[q] = 0;
 
-int
-main (int argc, char **argv)
-{
-  bool ok = true;
-  int can_mode = CAN_ALL_BUT_LAST;
-  char const *relative_to = nullptr;
-  char const *relative_base = nullptr;
+	if (output[0] != '/') {
+		if (!getcwd(stack, sizeof stack)) return 0;
+		l = strlen(stack);
+		/* Cancel any initial .. components. */
+		p = 0;
+		while (nup--) {
+			while(l>1 && stack[l-1]!='/') l--;
+			if (l>1) l--;
+			p += 2;
+			if (p<q) p++;
+		}
+		if (q-p && stack[l-1]!='/') stack[l++] = '/';
+		if (l + (q-p) + 1 >= PATH_MAX) goto toolong;
+		memmove(output + l, output + p, q - p + 1);
+		memcpy(output, stack, l);
+		q = l + q-p;
+	}
 
-  initialize_main (&argc, &argv);
-  set_program_name (argv[0]);
-  setlocale (LC_ALL, "");
-  bindtextdomain (PACKAGE, LOCALEDIR);
-  textdomain (PACKAGE);
+	if (resolved) return memcpy(resolved, output, q+1);
+	else return strdup(output);
 
-  atexit (close_stdout);
-
-  while (true)
-    {
-      int c = getopt_long (argc, argv, "EeLmPqsz", longopts, nullptr);
-      if (c == -1)
-        break;
-      switch (c)
-        {
-        case 'E':
-          can_mode &= ~CAN_MODE_MASK;
-          can_mode |= CAN_ALL_BUT_LAST;
-          break;
-        case 'e':
-          can_mode &= ~CAN_MODE_MASK;
-          can_mode |= CAN_EXISTING;
-          break;
-        case 'm':
-          can_mode &= ~CAN_MODE_MASK;
-          can_mode |= CAN_MISSING;
-          break;
-        case 'L':
-          can_mode |= CAN_NOLINKS;
-          logical = true;
-          break;
-        case 's':
-          can_mode |= CAN_NOLINKS;
-          logical = false;
-          break;
-        case 'P':
-          can_mode &= ~CAN_NOLINKS;
-          logical = false;
-          break;
-        case 'q':
-          verbose = false;
-          break;
-        case 'z':
-          use_nuls = true;
-          break;
-        case RELATIVE_TO_OPTION:
-          relative_to = optarg;
-          break;
-        case RELATIVE_BASE_OPTION:
-          relative_base = optarg;
-          break;
-        case_GETOPT_HELP_CHAR;
-        case_GETOPT_VERSION_CHAR (PROGRAM_NAME, AUTHORS);
-        default:
-          usage (EXIT_FAILURE);
-        }
-    }
-
-  if (optind >= argc)
-    {
-      error (0, 0, _("missing operand"));
-      usage (EXIT_FAILURE);
-    }
-
-  if (relative_base && !relative_to)
-    relative_to = relative_base;
-
-  bool need_dir = (can_mode & CAN_MODE_MASK) == CAN_EXISTING;
-  if (relative_to)
-    {
-      can_relative_to = realpath_canon (relative_to, can_mode);
-      if (!can_relative_to)
-        error (EXIT_FAILURE, errno, "%s", quotef (relative_to));
-      if (need_dir && !isdir (can_relative_to))
-        error (EXIT_FAILURE, ENOTDIR, "%s", quotef (relative_to));
-    }
-  if (relative_base == relative_to)
-    can_relative_base = can_relative_to;
-  else if (relative_base)
-    {
-      char *base = realpath_canon (relative_base, can_mode);
-      if (!base)
-        error (EXIT_FAILURE, errno, "%s", quotef (relative_base));
-      if (need_dir && !isdir (base))
-        error (EXIT_FAILURE, ENOTDIR, "%s", quotef (relative_base));
-      /* --relative-to is a no-op if it does not have --relative-base
-           as a prefix */
-      if (path_prefix (base, can_relative_to))
-        can_relative_base = base;
-      else
-        {
-          free (base);
-          can_relative_base = can_relative_to;
-          can_relative_to = nullptr;
-        }
-    }
-
-  for (; optind < argc; ++optind)
-    ok &= process_path (argv[optind], can_mode);
-
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+toolong:
+	errno = ENAMETOOLONG;
+	return 0;
 }
