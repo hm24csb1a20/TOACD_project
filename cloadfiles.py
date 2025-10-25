@@ -12,12 +12,12 @@ FEATURE_LIST = ['ARRAY_SUBSCRIPT_EXPR', 'BINARY_OPERATOR', 'BREAK_STMT', 'CALL_E
                      'LABEL_STMT', 'MEMBER_REF_EXPR', 'NULL_STMT', 'PAREN_EXPR', 'PARM_DECL', 'RETURN_STMT', 'STATIC_ASSERT', 'STRING_LITERAL', 'STRUCT_DECL',
                        'SWITCH_STMT', 'TRANSLATION_UNIT', 'TYPEDEF_DECL', 'TYPE_REF', 'UNARY_OPERATOR', 'UNEXPOSED_ATTR', 'UNEXPOSED_DECL', 'UNEXPOSED_EXPR',
                          'UNION_DECL', 'VAR_DECL', 'WHILE_STMT']
-def makeFEATURELIST(filepaht1,filepaht2):
+def makeFEATURELIST(file_path1="benign",file_path2="malicious"):
     """
     first time running program made this to get the hyperparameter 
     FEATURE_LIST"""
-    benign_featrues = parse_all_files(filepaht1)  
-    malicious_features =parse_all_files(filepaht2)
+    benign_featrues = parse_all_files(file_path1)  
+    malicious_features =parse_all_files(file_path2)
     all_features = benign_featrues+malicious_features  
 
     temp = set(chain.from_iterable(all_features))
@@ -40,14 +40,14 @@ def parse_all_files(file_path):
     for i in suffixes:
         results.append(parse_c_file(os.path.join(root,i)))
     return (results)
-def vectorize_parse_all_files(file_path):
+def vectorize_parse_all_files(file_path,FEATURE_LIST = FEATURE_LIST):
     """"
     if given {"benign"} or {"malicious"} gets the parses of all those"""
     suffixes = getallfiels(file_path)
     root = os.path.join(os.getcwd(),"cpp_tests",file_path)
     results =[]
     for i in suffixes:
-        results.append(pareser_to_vector(parse_c_file(os.path.join(root,i))))
+        results.append(pareser_to_vector(parse_c_file(os.path.join(root,i)),FEATURE_LIST))
     return np.array(results)
 
 def pareser_to_vector(node_kinds,FEATURE_LIST = FEATURE_LIST):
@@ -56,8 +56,9 @@ def pareser_to_vector(node_kinds,FEATURE_LIST = FEATURE_LIST):
     return np.array([features.get(k, 0) for k in FEATURE_LIST])
 
 def make_the_ml_datasets(file_path1="benign",file_path2="malicious"):
-    benign_vectors =vectorize_parse_all_files(file_path1)
-    malicious_vectors = vectorize_parse_all_files(file_path2)
+    FEATURE_LIST_n = makeFEATURELIST(file_path1,file_path2)
+    benign_vectors =vectorize_parse_all_files(file_path1,FEATURE_LIST_n)
+    malicious_vectors = vectorize_parse_all_files(file_path2,FEATURE_LIST_n)
     # labelling for making y 
     benign_labels = np.zeros(len(benign_vectors), dtype=int)       # 0 = benign
     malicious_labels = np.ones(len(malicious_vectors), dtype=int)  # 1 = malicious
