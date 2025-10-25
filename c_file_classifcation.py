@@ -8,26 +8,17 @@ from sklearn.metrics import accuracy_score
 
 
 
-def logistic_regressoin_classificaton():
-    X,y=make_the_ml_datasets()
+def logistic_regressoin_classificaton(random_seed =42):
+    X,y=make_the_ml_datasets(random_seed=random_seed)
     X_train,X_test,y_train,y_test = train_test_split(X,y,test_size= 0.2, stratify=y)
 
-    model = LogisticRegression()
+    model = LogisticRegression(random_seed=random_seed)
     model.fit(X=X_train,y=y_train)
     y_pred = model.predict(X_test)
     acc= accuracy_score(y_pred=y_pred,y_true=y_test)
     print(acc)
 
-def random_tree_forest():
-    X,y=make_the_ml_datasets()
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size= 0.2, stratify=y)
-
-    model = RandomForestClassifier()
-    model.fit(X=X_train,y=y_train)
-    y_pred = model.predict(X_test)
-    acc= accuracy_score(y_pred=y_pred,y_true=y_test)
-    print(acc)
-logistic_regressoin_classificaton()
+logistic_regressoin_classificaton(random_seed=42)
 
 
 

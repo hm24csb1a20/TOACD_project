@@ -14,17 +14,19 @@ import numpy as np
 class LogisticRegression:
     """logistic regression using newton method"""
 
-    def __init__(self, eps=1e-6, max_iter=100, reg_lambda=1e-4):
+    def __init__(self, eps=1e-6, max_iter=100, reg_lambda=1e-4,random_seed=42):
         # attributes
         self.theta = None
         self.eps = eps
         self.max_iter = max_iter
         self.reg_lambda = reg_lambda  
+        self.random_seed = random_seed
     def sigmoid(self, z):
         # turns big positive to almost 1 and big neg to almost 0 
         return 1 / (1 + np.exp(-z))
 
     def fit(self, X, y):
+        np.random.seed(self.random_seed)
         # do the actual training here newton style
         m, n = X.shape
         # if no theta yet just fill zeros
@@ -64,17 +66,18 @@ class LogisticRegression:
         # hard yes or no 1 or 0
         return (self.predict_prob(X) >= 0.5).astype(int)
 
-# load dataset
-X, y, vectorizer = prepare_dataset(benign_path, malicious_path)
+if(__name__=="__main__"):
+    # load dataset
+    X, y, vectorizer = prepare_dataset(benign_path, malicious_path)
 
-# split train/test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # split train/test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# train model
-clf = LogisticRegression(max_iter=1000)
-clf.fit(X_train, y_train)
+    # train model
+    clf = LogisticRegression(max_iter=1000)
+    clf.fit(X_train, y_train)
 
-# predict and evaluate
-y_pred = clf.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print(classification_report(y_test, y_pred))
+    # predict and evaluate
+    y_pred = clf.predict(X_test)
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print(classification_report(y_test, y_pred))

@@ -49,7 +49,7 @@ def pareser_to_vector(node_kinds,FEATURE_LIST = FEATURE_LIST):
     features = Counter(node_kinds)
     return np.array([features.get(k, 0) for k in FEATURE_LIST])
 
-def makeFEATURELIST(file_path1="benign",file_path2="malicious"):
+def makeFEATURELIST( file_path1="benign",file_path2="malicious"):
     """
     first time running program made this to get the hyperparameter 
     FEATURE_LIST"""
@@ -61,8 +61,8 @@ def makeFEATURELIST(file_path1="benign",file_path2="malicious"):
     FEATURE_LIST = sorted(temp)
     return(FEATURE_LIST)
 
-print(makeFEATURELIST())
-def make_the_ml_datasets(file_path1="benign",file_path2="malicious"):
+def make_the_ml_datasets(random_seed=42,file_path1="benign",file_path2="malicious"):
+    np.random.seed(random_seed)
     # FEATURE_LIST = makeFEATURELIST(file_path1,file_path2)
     benign_vectors =vectorize_parse_all_files(file_path1,FEATURE_LIST)
     malicious_vectors = vectorize_parse_all_files(file_path2,FEATURE_LIST)
