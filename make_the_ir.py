@@ -34,30 +34,42 @@ def valid_c_file(file_path):
     """return false if the file contains any #include line."""
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
-            if line.strip().startswith("#include"):
+            if line.strip().startswith(("#include","# include")):
                 return False
     return True
 
-def randomly_pick_file(RANDOM_SEED,folder_paths = ("benign", "malicious") ):
+def randomly_pick_file(RANDOM_SEED,folder_paths = ("benign", "malicious"),max_iter = 20 ):
     """
     randomly picks soem file in the 2 folder "benign", "malicious"
+    then chekc if has some depenedent #include 
+    if yes then do it again till max_iter
     """
-    np.random.seed(RANDOM_SEED)
-    fld = np.random.choice(folder_paths)
-    current = os.getcwd()
-    prefix = os.path.join(current,"cpp_tests",fld)
+    
+    for i in range(max_iter):
+        np.random.seed(RANDOM_SEED+i)
+        fld = np.random.choice(folder_paths)
+        current = os.getcwd()
+        prefix = os.path.join(current,"cpp_tests",fld)
 
-    # only to pick c files
-    c_files = [f for f in os.listdir(prefix) if f.endswith('.c')]
-    valid_files = [f for f in c_files if valid_c_file(os.path.join(prefix, f))]
-    chosen_file = np.random.choice(valid_files)
-    final_path = os.path.join(prefix,chosen_file)
+        # only to pick c files
+        c_files = [f for f in os.listdir(prefix) if f.endswith('.c')]
+        chosen_file = np.random.choice(c_files)
+        final_path = os.path.join(prefix,chosen_file)
 
-    label = 0 if fld == "benign" else 1
-    return final_path,label
+        
+        if valid_c_file(final_path):
+            label = 0 if fld == "benign" else 1
+            return final_path, label
+    print("No valid C file found after max attempts.")
+    return None, None
+    
 
 if(__name__=="__main__"):
-    RANDOM_SEED = 44
+    RANDOM_SEED = 46
     model = logistic_regressoin_classificaton()
-    file_path, label = randomly_pick_file(RANDOM_SEED)
-    check_and_generate_IR(model,file_path)
+
+    result = randomly_pick_file(RANDOM_SEED)
+    if result[0] is not None:
+        
+        file_path, label = result
+        check_and_generate_IR(model, file_path)
