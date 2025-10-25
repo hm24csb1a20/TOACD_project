@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from makesyntaxtree import parse_c_file
+from collections import Counter
 
 
 def getallfiels(file_path):
@@ -21,4 +22,14 @@ def parse_all_files(file_path):
         results.append(parse_c_file(os.path.join(root,i)))
     return np.array(results)
 
-parse_all_files("benign")    
+def pareser_to_vector(node_kinds):
+    # gives dictionary of all the words and their freq
+    features = Counter(node_kinds)
+
+    return np.array([i[1] for i in features.items()]),features
+    
+# parse_all_files("benign")    
+current = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(current, "cpp_tests", "benign","__cos.c")
+node_kinds = parse_c_file(file_path=file_path)
+print(pareser_to_vector(node_kinds))
