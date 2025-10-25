@@ -56,9 +56,9 @@ def pareser_to_vector(node_kinds,FEATURE_LIST = FEATURE_LIST):
     return np.array([features.get(k, 0) for k in FEATURE_LIST])
 
 def make_the_ml_datasets(file_path1="benign",file_path2="malicious"):
-    FEATURE_LIST_n = makeFEATURELIST(file_path1,file_path2)
-    benign_vectors =vectorize_parse_all_files(file_path1,FEATURE_LIST_n)
-    malicious_vectors = vectorize_parse_all_files(file_path2,FEATURE_LIST_n)
+    # FEATURE_LIST = makeFEATURELIST(file_path1,file_path2)
+    benign_vectors =vectorize_parse_all_files(file_path1,FEATURE_LIST)
+    malicious_vectors = vectorize_parse_all_files(file_path2,FEATURE_LIST)
     # labelling for making y 
     benign_labels = np.zeros(len(benign_vectors), dtype=int)       # 0 = benign
     malicious_labels = np.ones(len(malicious_vectors), dtype=int)  # 1 = malicious
