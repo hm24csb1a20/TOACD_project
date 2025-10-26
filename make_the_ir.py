@@ -1,4 +1,4 @@
-from c_file_classifcation import logistic_regressoin_classificaton
+import joblib
 from makesyntaxtree import parse_c_file
 from cloadfiles import pareser_to_vector
 from ml_data_visualization import FEATURE_LIST
@@ -60,7 +60,7 @@ def randomly_pick_file(RANDOM_SEED,folder_paths = ("benign", "malicious"),max_it
     
 if __name__ == "__main__":
     RANDOM_SEED = 46
-    model = logistic_regressoin_classificaton()
+    model = joblib.load("final_logreg_model")
 
     max_iter= 50  
     attempt = 0
