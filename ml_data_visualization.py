@@ -1,12 +1,12 @@
 from cloadfiles import make_the_ml_datasets,FEATURE_LIST
 import matplotlib.pyplot as plt
+
 if __name__ =="__main__":
     X,y= make_the_ml_datasets()
     n_col = X.shape[1]
     
     X_b = X[y==0]
     X_m= X[y==1]
-    # usally axis =1 so col elemnt of a row
     fX_b = X_b.sum(axis=0)
     fX_m = X_m.sum(axis=0)
 

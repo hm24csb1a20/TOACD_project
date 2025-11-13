@@ -14,8 +14,9 @@ def generate_ir(file_path,output_dir = "ir_files"):
     ir_file = os.path.join(output_dir, base_name.replace('.c', '.ll'))
     try:
         out = file_path.replace(".c", ".exe")
-
         subprocess.run(["clang", file_path, "-o", out], check=True)
+        subprocess.run([out], check=True)
+
     except subprocess.CalledProcessError as e:
         print(f"Failed to generate IR for {file_path}: {e}")
 
