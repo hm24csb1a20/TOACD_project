@@ -7,8 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 
-
-def logistic_regressoin_classificaton(random_seed =42):
+def logistic_regression_classificaton(random_seed =42):
     X,y=make_the_ml_datasets(random_seed=random_seed)
     X_train,X_test,y_train,y_test = train_test_split(X,y,test_size= 0.2, stratify=y)
 
@@ -17,8 +16,9 @@ def logistic_regressoin_classificaton(random_seed =42):
     y_pred = model.predict(X_test)
     acc= accuracy_score(y_pred=y_pred,y_true=y_test)
     print(f"The final Accuracy of the model is {acc}")
-    return model 
+    return model
+
 if __name__ == "__main__":
-    logistic_regressoin_classificaton()
+    logistic_regression_classificaton()
 
 

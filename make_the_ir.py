@@ -1,6 +1,6 @@
 import joblib
 from makesyntaxtree import parse_c_file
-from cloadfiles import pareser_to_vector
+from cloadfiles import parser_to_vector
 from ml_data_visualization import FEATURE_LIST
 import subprocess
 import os
@@ -19,6 +19,8 @@ def generate_ir(file_path,output_dir = "ir_files"):
         print(f"IR generated: {ir_file}")
     except subprocess.CalledProcessError as e:
         print(f"Failed to generate IR for {file_path}: {e}")
+        
+        
 def valid_c_file(file_path):
     """return false if the file contains any #include line."""
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -26,10 +28,12 @@ def valid_c_file(file_path):
             if line.strip().startswith(("#include","# include")):
                 return False
     return True
+
+
 def check_and_generate_IR(model, file_path, FEATURE_LIST = FEATURE_LIST):
     """chekc if safe then generate IR"""
     node_kinds = parse_c_file(file_path=file_path)
-    xvec = pareser_to_vector(node_kinds,FEATURE_LIST).reshape(1,-1)
+    xvec = parser_to_vector(node_kinds,FEATURE_LIST).reshape(1,-1)
     pred = model.predict(xvec)[0]
     if(pred==0):
        if(valid_c_file(file_path)):
@@ -69,7 +73,7 @@ if __name__ == "__main__":
     while attempt < max_iter and not generated:
         file_path, label = randomly_pick_file(RANDOM_SEED + attempt)
         node_kinds = parse_c_file(file_path)
-        xvec = pareser_to_vector(node_kinds, FEATURE_LIST).reshape(1, -1)
+        xvec = parser_to_vector(node_kinds, FEATURE_LIST).reshape(1, -1)
         pred = model.predict(xvec)[0]
 
         if pred == 0 and valid_c_file(file_path):
