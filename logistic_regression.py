@@ -21,9 +21,25 @@ class LogisticRegression:
         self.max_iter = max_iter
         self.reg_lambda = reg_lambda  
         self.random_seed = random_seed
+        
     def sigmoid(self, z):
-        # turns big positive to almost 1 and big neg to almost 0 
-        return 1 / (1 + np.exp(-z))
+        z = np.asarray(z, dtype=float)
+
+        pos_mask = z >= 0
+        neg_mask = ~pos_mask
+
+        out = np.zeros_like(z, dtype=float)
+
+        # For positive z: safe because exp(-z) is tiny
+        out[pos_mask] = 1.0 / (1.0 + np.exp(-z[pos_mask]))
+
+        # For negative z: safe because exp(z) is tiny
+        exp_z = np.exp(z[neg_mask])
+        out[neg_mask] = exp_z / (1.0 + exp_z)
+
+        return out
+
+
 
     def fit(self, X, y):
         np.random.seed(self.random_seed)
