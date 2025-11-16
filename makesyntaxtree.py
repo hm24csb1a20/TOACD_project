@@ -3,7 +3,7 @@ import os
 import subprocess
 
 # point to clang in the computer not to use MSY2
-cindex.Config.set_library_file(r"C:\Program Files\LLVM\bin\libclang.dll")
+# cindex.Config.set_library_file(r"C:\Program Files\LLVM\bin\libclang.dll")
 
 
 # def get_clang_includes():

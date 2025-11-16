@@ -1,11 +1,13 @@
+from clang_config import config
+config()
 import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
 import os
-
+from compiler_integration import check_and_generate_IR
 from makesyntaxtree import parse_c_file
-from cloadfiles import pareser_to_vector
+from cloadfiles import parser_to_vector
 from ml_data_visualization import FEATURE_LIST
 
 # ----------------------------
@@ -17,7 +19,7 @@ st.title("🛡️ C/C++ Malware Detection using Logistic Regression")
 # ----------------------------
 # LOAD MODEL
 # ----------------------------
-MODEL_PATH = "logistic_model_v1.pkl"
+MODEL_PATH = "final_logreg_model"
 
 if not os.path.exists(MODEL_PATH):
     st.error("⚠️ Model file not found! Please train and save it first.")
@@ -28,6 +30,8 @@ model = joblib.load(MODEL_PATH)
 # ----------------------------
 # FILE UPLOAD SECTION
 # ----------------------------
+
+
 st.subheader("📂 Upload a C or C++ Source File")
 
 uploaded_file = st.file_uploader(
@@ -39,9 +43,17 @@ if uploaded_file is not None:
     code = uploaded_file.read().decode("utf-8")
 
     # Save temporarily to disk for Clang parser (if required)
-    temp_path = "temp_upload.c"
-    with open(temp_path, "w", encoding="utf-8") as f:
+    file_path = "temp_upload.c"
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(code)
+    with open(file_path, "r") as f:
+        lines = f.readlines()
+    for i, line in enumerate(lines):
+        if '#include "libm.h"' in line:
+            lines[i] = '#include <libm.h>\n'
+
+    with open(file_path, "w") as f:
+        f.writelines(lines)
 
     # Display uploaded code
     with st.expander("📄 View Uploaded Code"):
@@ -52,8 +64,8 @@ if uploaded_file is not None:
     # ----------------------------
     st.subheader("🔍 Feature Extraction in Progress...")
     try:
-        node_kinds = parse_c_file(temp_path)
-        xvec = pareser_to_vector(node_kinds, FEATURE_LIST).reshape(1, -1)
+        node_kinds = parse_c_file(file_path)
+        xvec = parser_to_vector(node_kinds, FEATURE_LIST).reshape(1, -1)
 
         # Convert to DataFrame for nice display
         feature_df = pd.DataFrame(xvec, columns=FEATURE_LIST)
@@ -69,12 +81,13 @@ if uploaded_file is not None:
 
         if pred == 0:
             st.success("✅ This file appears **Benign**.")
+            st.markdown("### Output")
+            st.success(check_and_generate_IR(model,file_path))
         elif pred == 1:
             st.error("⚠️ This file appears **Malicious**.")
 
     except Exception as e:
         st.error(f"Error during parsing or prediction: {e}")
 
-    # Clean up temporary file
-    if os.path.exists(temp_path):
-        os.remove(temp_path)
+    if os.path.exists(file_path):
+        os.remove(file_path)
